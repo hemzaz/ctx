@@ -65,3 +65,6 @@ strix_runs/
 
 # MkDocs build output
 /site/
+
+# OMC runtime state (local harness, not source)
+.omc/
