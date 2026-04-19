@@ -1,0 +1,95 @@
+{
+  "mode": "tag-search",
+  "results": [
+    {
+      "name": "openant-pipeline",
+      "type": "skill",
+      "score": 27.18,
+      "matching_tags": [
+        "python",
+        "fastapi"
+      ]
+    },
+    {
+      "name": "claude-settings-audit",
+      "type": "skill",
+      "score": 27.16,
+      "matching_tags": [
+        "python",
+        "fastapi"
+      ]
+    },
+    {
+      "name": "faf-wizard",
+      "type": "skill",
+      "score": 27.16,
+      "matching_tags": [
+        "python",
+        "fastapi"
+      ]
+    },
+    {
+      "name": "django-developer",
+      "type": "agent",
+      "score": 27.11,
+      "matching_tags": [
+        "python",
+        "api"
+      ]
+    },
+    {
+      "name": "strix-vulnerabilities-information-disclosure",
+      "type": "skill",
+      "score": 27.11,
+      "matching_tags": [
+        "python",
+        "api"
+      ]
+    },
+    {
+      "name": "strix-vulnerabilities-ssrf",
+      "type": "skill",
+      "score": 27.11,
+      "matching_tags": [
+        "python",
+        "api"
+      ]
+    },
+    {
+      "name": "strix-frameworks-nestjs",
+      "type": "skill",
+      "score": 27.11,
+      "matching_tags": [
+        "python",
+        "api"
+      ]
+    },
+    {
+      "name": "strix-vulnerabilities-xxe",
+      "type": "skill",
+      "score": 27.11,
+      "matching_tags": [
+        "python",
+        "api"
+      ]
+    },
+    {
+      "name": "test-automator",
+      "type": "agent",
+      "score": 27.11,
+      "matching_tags": [
+        "python",
+        "api"
+      ]
+    },
+    {
+      "name": "strix-frameworks-fastapi",
+      "type": "skill",
+      "score": 27.11,
+      "matching_tags": [
+        "python",
+        "api"
+      ]
+    }
+  ]
+}

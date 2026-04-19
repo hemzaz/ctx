@@ -1,0 +1,98 @@
+{
+  "mode": "tag-search",
+  "results": [
+    {
+      "name": "claude-settings-audit",
+      "type": "skill",
+      "score": 37.16,
+      "matching_tags": [
+        "docker",
+        "kubernetes",
+        "go"
+      ]
+    },
+    {
+      "name": "prompt-optimizer",
+      "type": "skill",
+      "score": 37.14,
+      "matching_tags": [
+        "docker",
+        "kubernetes",
+        "go"
+      ]
+    },
+    {
+      "name": "deployment-patterns",
+      "type": "skill",
+      "score": 37.1,
+      "matching_tags": [
+        "docker",
+        "kubernetes",
+        "go"
+      ]
+    },
+    {
+      "name": "openant-pipeline",
+      "type": "skill",
+      "score": 27.18,
+      "matching_tags": [
+        "docker",
+        "go"
+      ]
+    },
+    {
+      "name": "faf-wizard",
+      "type": "skill",
+      "score": 27.16,
+      "matching_tags": [
+        "docker",
+        "go"
+      ]
+    },
+    {
+      "name": "strix-vulnerabilities-information-disclosure",
+      "type": "skill",
+      "score": 27.11,
+      "matching_tags": [
+        "docker",
+        "kubernetes"
+      ]
+    },
+    {
+      "name": "strix-vulnerabilities-ssrf",
+      "type": "skill",
+      "score": 27.11,
+      "matching_tags": [
+        "docker",
+        "kubernetes"
+      ]
+    },
+    {
+      "name": "strix-vulnerabilities-rce",
+      "type": "skill",
+      "score": 27.11,
+      "matching_tags": [
+        "docker",
+        "kubernetes"
+      ]
+    },
+    {
+      "name": "security-engineer",
+      "type": "agent",
+      "score": 27.1,
+      "matching_tags": [
+        "docker",
+        "kubernetes"
+      ]
+    },
+    {
+      "name": "devops-engineer",
+      "type": "agent",
+      "score": 27.09,
+      "matching_tags": [
+        "docker",
+        "kubernetes"
+      ]
+    }
+  ]
+}

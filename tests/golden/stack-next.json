@@ -1,0 +1,33 @@
+{
+  "repo_path": "/tmp/ctx-sandbox/test-projects/next-app",
+  "scanned_at": "2026-04-19T11:00:31.538985+00:00",
+  "languages": [],
+  "frameworks": [
+    {
+      "name": "react",
+      "category": "web",
+      "confidence": 0.9,
+      "evidence": [
+        "react in dependencies"
+      ]
+    },
+    {
+      "name": "nextjs",
+      "category": "web",
+      "confidence": 0.95,
+      "evidence": [
+        "next in dependencies"
+      ]
+    }
+  ],
+  "infrastructure": [],
+  "data_stores": [],
+  "testing": [],
+  "ai_tooling": [],
+  "build_system": [],
+  "docs": [],
+  "project_type": "frontend",
+  "monorepo": false,
+  "workspace_packages": [],
+  "custom_signals": {}
+}

@@ -1,0 +1,41 @@
+{
+  "repo_path": "/tmp/ctx-sandbox/test-projects/fastapi-app",
+  "scanned_at": "2026-04-19T11:00:31.271715+00:00",
+  "languages": [],
+  "frameworks": [
+    {
+      "name": "fastapi",
+      "category": "web",
+      "confidence": 0.99,
+      "evidence": [
+        "fastapi in dependencies"
+      ]
+    }
+  ],
+  "infrastructure": [
+    {
+      "name": "docker",
+      "confidence": 1.0,
+      "evidence": [
+        "Dockerfile"
+      ]
+    }
+  ],
+  "data_stores": [
+    {
+      "name": "sqlalchemy",
+      "confidence": 0.95,
+      "evidence": [
+        "sqlalchemy in dependencies"
+      ]
+    }
+  ],
+  "testing": [],
+  "ai_tooling": [],
+  "build_system": [],
+  "docs": [],
+  "project_type": "api-service",
+  "monorepo": false,
+  "workspace_packages": [],
+  "custom_signals": {}
+}

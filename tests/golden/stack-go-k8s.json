@@ -1,0 +1,24 @@
+{
+  "repo_path": "/tmp/ctx-sandbox/test-projects/go-k8s",
+  "scanned_at": "2026-04-19T11:00:31.793423+00:00",
+  "languages": [],
+  "frameworks": [],
+  "infrastructure": [
+    {
+      "name": "docker",
+      "confidence": 1.0,
+      "evidence": [
+        "Dockerfile"
+      ]
+    }
+  ],
+  "data_stores": [],
+  "testing": [],
+  "ai_tooling": [],
+  "build_system": [],
+  "docs": [],
+  "project_type": "infrastructure",
+  "monorepo": false,
+  "workspace_packages": [],
+  "custom_signals": {}
+}
