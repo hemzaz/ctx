@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """
-context_monitor.py -- PostToolUse hook: extract intent signals, update intent log.
+context_monitor.py -- PostToolUse hook (opt-in): extract stack signals
+from the current tool call, append to the intent log, and flag unmatched
+signals for skill_suggest.py to surface.
 
-Called by Claude Code PostToolUse hook:
-    python context_monitor.py --tool <tool_name> [--input <json_string>]
+No-op unless ``cfg.enable_live_suggestions`` is True.
 
-Runs in <200ms. Appends to ~/.claude/intent-log.jsonl.
-If >=3 unmatched signals detected, writes ~/.claude/pending-skills.json.
+Writes (when enabled):
+  - ``cfg.intent_log``       (append-only JSONL of observed signals)
+  - ``cfg.pending_skills``   (surfaced by skill_suggest.py on next call)
+
+Reads: ``cfg.manifest_path`` (loaded skills), ``cfg.graph_path`` (walk).
 """
 
 import argparse

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-wiki_utils.py -- Shared frontmatter parsing for the skill wiki.
+wiki_utils.py -- Shared frontmatter parsing for SKILL.md / agents/*.md.
 
-Consolidates the 6 divergent frontmatter parsers into one canonical
-implementation used by wiki_sync, wiki_orchestrator, wiki_graphify,
-wiki_query, usage_tracker, and wiki_lint.
+Used by catalog_builder, wiki_graphify, resolve_skills, and skill_loader
+to parse the YAML-ish frontmatter at the top of each skill/agent file.
 """
 
 import re

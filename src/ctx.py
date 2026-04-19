@@ -182,9 +182,20 @@ def cmd_recommend(args: argparse.Namespace) -> int:
 
 def cmd_refresh(args: argparse.Namespace) -> int:
     cfg.ctx_home.mkdir(parents=True, exist_ok=True)
+    catalog_args = [_python(), str(_SRC_DIR / "catalog_builder.py")]
+    if args.skills_dir:
+        catalog_args += ["--skills-dir", args.skills_dir]
+    if args.agents_dir:
+        catalog_args += ["--agents-dir", args.agents_dir]
+    if args.extra_dirs:
+        catalog_args += ["--extra-dirs", *args.extra_dirs]
     print(f"[ctx] rebuilding catalog → {cfg.catalog_path}", file=sys.stderr)
-    _run([_python(), str(_SRC_DIR / "catalog_builder.py")])
+    _run(catalog_args)
     print(f"[ctx] rebuilding graph → {cfg.graph_path}", file=sys.stderr)
+    # wiki_graphify reads cfg directly; overrides to skills_dir/agents_dir
+    # must go through the config file or env (CTX_HOME). For ad-hoc runs,
+    # prefer the subprocess to inherit env so CTX_HOME + any user config
+    # at ~/.claude/skill-system-config.json take effect.
     _run([_python(), str(_SRC_DIR / "wiki_graphify.py")])
     return 0
 
@@ -299,6 +310,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_recommend)
 
     p = sub.add_parser("refresh", help="Rebuild catalog.json and graph.json")
+    p.add_argument("--skills-dir", default=None, help="Override skills dir (default: cfg.skills_dir)")
+    p.add_argument("--agents-dir", default=None, help="Override agents dir (default: cfg.agents_dir)")
+    p.add_argument("--extra-dirs", nargs="*", default=None, help="Additional skill/agent source dirs")
     p.set_defaults(func=cmd_refresh)
 
     p = sub.add_parser("show-pending", help="Show current pending suggestions")

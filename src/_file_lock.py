@@ -1,10 +1,9 @@
 """
 _file_lock.py -- Cross-platform advisory file lock.
 
-Used by the toolbox and skill-health modules to serialize read-modify-write
-cycles on shared config/manifest files (e.g. ~/.claude/skill-manifest.json,
-~/.claude/toolbox-runs/<hash>.verdict.json) so that concurrent agent sessions
-do not clobber each other's writes.
+Serializes read-modify-write cycles on shared ctx state files (e.g.
+``cfg.manifest_path``, ``cfg.pending_skills``) so concurrent agent
+sessions do not clobber each other's writes.
 
 Usage:
 
