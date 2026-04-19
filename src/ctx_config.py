@@ -68,9 +68,6 @@ class Config:
         resolver = raw.get("resolver", {})
         monitor = raw.get("context_monitor", {})
         tracker = raw.get("usage_tracker", {})
-        transformer = raw.get("skill_transformer", {})
-        router = raw.get("skill_router", {})
-        bsitter = raw.get("babysitter", {})
 
         # ── Paths ──────────────────────────────────────────────────────────
         self.claude_dir = Path(_expand(paths.get("claude_dir", "~/.claude")))
@@ -99,14 +96,9 @@ class Config:
         self.stale_threshold_sessions: int = tracker.get("stale_threshold_sessions", 30)
         self.keep_log_days: int = tracker.get("keep_log_days", 5)
 
-        # ── Skill Transformer ──────────────────────────────────────────────
-        self.line_threshold: int = transformer.get("line_threshold", 180)
-        self.max_stage_lines: int = transformer.get("max_stage_lines", 40)
-        self.stage_count: int = transformer.get("stage_count", 5)
-
-        # ── Skill Router ───────────────────────────────────────────────────
-        self.manifest_stale_router_minutes: int = router.get("manifest_stale_minutes", 60)
-        self.manifest_max_age_hours: int = router.get("manifest_max_age_hours", 24)
+        # ── Catalog ────────────────────────────────────────────────────────
+        # Skills over this line count are flagged (informational) in the catalog.
+        self.line_threshold: int = int(raw.get("line_threshold", 180))
 
         # ── Extra Skill Dirs ───────────────────────────────────────────────
         self.extra_skill_dirs: list[Path] = [
@@ -125,11 +117,6 @@ class Config:
             "comparison", "decision", "pattern", "troubleshooting",
             "marketplace", "registry", "versioning", "compatibility",
         ])
-
-        # ── Babysitter ─────────────────────────────────────────────────────
-        self.babysitter_plugin_root: str = bsitter.get("plugin_root", "")
-        self.babysitter_runs_dir: str = bsitter.get("runs_dir", ".a5c/runs")
-        self.babysitter_sdk_version: str = bsitter.get("sdk_version", "latest")
 
     def get(self, key: str, default: Any = None) -> Any:
         """Raw key access (dot-separated: 'paths.wiki_dir')."""

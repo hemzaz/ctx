@@ -47,10 +47,7 @@ def _minimal_raw(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
         "resolver": {},
         "context_monitor": {},
         "usage_tracker": {},
-        "skill_transformer": {},
-        "skill_router": {},
         "extra_skill_dirs": [],
-        "babysitter": {},
     }
     if overrides:
         _deep_merge(raw, overrides)
@@ -77,17 +74,9 @@ class TestConfigLoadsDefaults:
         cfg = Config(_minimal_raw())
         assert cfg.line_threshold == 180
 
-    def test_max_stage_lines_default(self) -> None:
-        cfg = Config(_minimal_raw())
-        assert cfg.max_stage_lines == 40
-
     def test_max_skills_default(self) -> None:
         cfg = Config(_minimal_raw())
         assert cfg.max_skills == 15
-
-    def test_stage_count_default(self) -> None:
-        cfg = Config(_minimal_raw())
-        assert cfg.stage_count == 5
 
 
 class TestConfigPathsArePathlib:
@@ -147,7 +136,7 @@ class TestConfigReload:
         import json
 
         custom_config.write_text(
-            json.dumps({"skill_transformer": {"line_threshold": 999}}),
+            json.dumps({"line_threshold": 999}),
             encoding="utf-8",
         )
 
