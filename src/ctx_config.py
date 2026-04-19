@@ -102,10 +102,6 @@ class Config:
         self.graph_path = self.ctx_home / "graph.json"
         self.skill_registry = self.ctx_home / "registry.json"
 
-        # ── Legacy alias preserved during Phase 2 for wiki_graphify only.
-        # Removed in Phase 3 when wiki_graphify is rewritten.
-        self.skill_manifest = self.manifest_path
-
         # ── Resolver ──────────────────────────────────────────────────────
         self.max_skills: int = resolver.get("max_skills", 15)
         self.intent_boost_per_signal: int = resolver.get("intent_boost_per_signal", 5)
