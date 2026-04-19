@@ -1,23 +1,21 @@
 #!/usr/bin/env bash
 # uninstall.sh — reverse a ctx-minimal install.
 #
-# Default install layout (after Phase 2):
-#   ~/.claude/ctx/                      — all runtime state (graph, catalog,
-#                                         manifest, stack-profile, pending,
-#                                         intent-log, .shown)
-#   ~/.claude/agents/skill-router.md    — router agent (Phase 6)
-#   ~/.claude/commands/ctx.md           — /ctx slash command (Phase 6)
-#   ~/.claude/settings.json             — NOT touched by default install
-#                                         (only when --with-hooks was passed;
-#                                         a .pre-ctx.bak exists if so)
+# Removes:
+#   1. $CTX_HOME or ~/.claude/ctx/             (state dir; atomic rm -rf)
+#   2. ~/.claude/agents/skill-router.md        (router agent file)
+#   3. ~/.claude/commands/ctx.md               (/ctx slash command)
+#   4. Tagged hook block in ~/.claude/settings.json (only if present)
 #
-# This Phase-2 uninstall handles the ctx_home state dir. Phase 6 extends it
-# with router/slash-command removal and tagged-hook-block stripping.
+# Never touches:
+#   - ~/.claude/skills/** or ~/.claude/agents/** (other than the router file)
+#   - settings.json.pre-ctx.bak (left for your audit)
+#   - Any user-installed skill or agent
 #
 # Usage:
-#   ./uninstall.sh              # interactive: ask y/N per step
+#   ./uninstall.sh              # interactive y/N per step
 #   ./uninstall.sh --yes        # non-interactive
-#   ./uninstall.sh --dry-run    # print what would be removed, don't touch
+#   ./uninstall.sh --dry-run    # print what would be removed
 
 set -euo pipefail
 
@@ -32,7 +30,20 @@ for arg in "$@"; do
   esac
 done
 
-CTX_HOME="${CTX_HOME:-$HOME/.claude/ctx}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CTX_DIR="$SCRIPT_DIR"
+SRC_DIR="$CTX_DIR/src"
+
+CLAUDE_DIR="$HOME/.claude"
+AGENTS_DIR="$CLAUDE_DIR/agents"
+COMMANDS_DIR="$CLAUDE_DIR/commands"
+CTX_STATE_DIR="${CTX_HOME:-$CLAUDE_DIR/ctx}"
+SETTINGS="$CLAUDE_DIR/settings.json"
+
+PYTHON="${PYTHON:-python3}"
+if ! command -v "$PYTHON" &>/dev/null; then
+  PYTHON="python"
+fi
 
 confirm() {
   local prompt="$1"
@@ -50,29 +61,76 @@ act() {
 }
 
 echo "ctx-minimal uninstall"
-echo "  CTX_HOME:  $CTX_HOME"
-echo "  dry-run:   $DRY_RUN"
-echo "  assume-y:  $ASSUME_YES"
+echo "  state dir:  $CTX_STATE_DIR"
+echo "  router:     $AGENTS_DIR/skill-router.md"
+echo "  slash cmd:  $COMMANDS_DIR/ctx.md"
+echo "  settings:   $SETTINGS"
+echo "  mode:       dry-run=$DRY_RUN, assume-y=$ASSUME_YES"
 echo
 
-if [[ ! -d "$CTX_HOME" ]]; then
-  echo "Nothing to remove: $CTX_HOME does not exist."
-  exit 0
-fi
-
-echo "Contents of $CTX_HOME:"
-find "$CTX_HOME" -maxdepth 2 -type f | sed 's/^/  /'
-echo
-
-if confirm "Remove $CTX_HOME and all its contents?"; then
-  act "rm -rf '$CTX_HOME'"
-  echo "Removed: $CTX_HOME"
+# ── Step 1: state dir ────────────────────────────────────────────────────────
+if [[ -d "$CTX_STATE_DIR" ]]; then
+  echo "Contents of $CTX_STATE_DIR:"
+  find "$CTX_STATE_DIR" -maxdepth 2 -type f 2>/dev/null | sed 's/^/  /' || true
+  if confirm "Remove $CTX_STATE_DIR?"; then
+    act "rm -rf '$CTX_STATE_DIR'"
+    echo "  removed"
+  else
+    echo "  skipped"
+  fi
 else
-  echo "Skipped $CTX_HOME"
+  echo "No state dir at $CTX_STATE_DIR"
 fi
 
-# Phase 6 will add:
-#   - remove ~/.claude/agents/skill-router.md
-#   - remove ~/.claude/commands/ctx.md
-#   - if settings.json.pre-ctx.bak exists and hook block present,
-#     strip tagged entries (leaves .pre-ctx.bak for user to inspect/delete)
+# ── Step 2: skill-router agent file ──────────────────────────────────────────
+ROUTER="$AGENTS_DIR/skill-router.md"
+if [[ -f "$ROUTER" ]]; then
+  if confirm "Remove $ROUTER?"; then
+    act "rm -f '$ROUTER'"
+    echo "  removed"
+  else
+    echo "  skipped"
+  fi
+else
+  echo "No router at $ROUTER"
+fi
+
+# ── Step 3: /ctx slash command ───────────────────────────────────────────────
+SLASH="$COMMANDS_DIR/ctx.md"
+if [[ -f "$SLASH" ]]; then
+  if confirm "Remove $SLASH?"; then
+    act "rm -f '$SLASH'"
+    echo "  removed"
+  else
+    echo "  skipped"
+  fi
+else
+  echo "No slash command at $SLASH"
+fi
+
+# ── Step 4: hook block in settings.json ──────────────────────────────────────
+if [[ -f "$SETTINGS" ]] && [[ -f "$SRC_DIR/hook_installer.py" ]]; then
+  # Detect whether any ctx-tagged entries are present before prompting.
+  if grep -q '"_ctx": true\|@ctx-minimal' "$SETTINGS" 2>/dev/null; then
+    if confirm "Strip ctx-tagged hook entries from $SETTINGS?"; then
+      if [[ "$DRY_RUN" == 1 ]]; then
+        echo "  [dry-run] would run: $PYTHON $SRC_DIR/ctx.py uninstall-hook"
+      else
+        "$PYTHON" "$SRC_DIR/ctx.py" uninstall-hook
+      fi
+    else
+      echo "  skipped (tagged entries remain in settings.json)"
+    fi
+  else
+    echo "No ctx-tagged hook entries in $SETTINGS"
+  fi
+fi
+
+# ── Done ─────────────────────────────────────────────────────────────────────
+BACKUP="$SETTINGS.pre-ctx.bak"
+echo
+if [[ -f "$BACKUP" ]]; then
+  echo "Note: $BACKUP was left in place for your audit."
+  echo "      Delete it manually once you've verified settings.json."
+fi
+echo "Uninstall complete."

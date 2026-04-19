@@ -1,97 +1,181 @@
 #!/usr/bin/env bash
-# install.sh -- Phase-3-scope installer for ctx-minimal.
+# install.sh — ctx-minimal installer (phased, confirmed, reversible).
 #
-# What this does:
-#   1. Creates the ctx state directory (~/.claude/ctx or $CTX_HOME)
-#   2. Builds catalog.json from ~/.claude/skills + ~/.claude/agents
-#   3. Builds graph.json from the same (SKILL.md tag frontmatter)
-#   4. Deploys skill-router markdown to ~/.claude/agents/skill-router.md
+# Default install writes exactly three things:
+#   1. $CTX_HOME or ~/.claude/ctx/                  (catalog.json + graph.json)
+#   2. ~/.claude/agents/skill-router.md             (router agent, single file)
+#   3. ~/.claude/commands/ctx.md                    (/ctx slash command)
 #
-# What this does NOT do (Phase 6 will extend):
-#   - Does not write ~/.claude/settings.json (hook installation is opt-in
-#     in Phase 4+ via `ctx install-hook`)
-#   - Does not rewrite any existing skill or agent files
-#   - Does not initialize a wiki (the wiki subsystem was removed)
+# Hooks are NOT installed by default. Pass --with-hooks to additionally
+# invoke `ctx install-hook`, which writes a tagged block into
+# ~/.claude/settings.json with a one-time .pre-ctx.bak backup.
 #
 # Usage:
-#   bash install.sh [--ctx-dir /path/to/ctx]
+#   ./install.sh                    # interactive y/N per step
+#   ./install.sh --yes              # non-interactive, no hooks
+#   ./install.sh --dry-run          # print what would happen
+#   ./install.sh --with-hooks       # also install live-suggestion hooks
+#   ./install.sh --yes --with-hooks # non-interactive including hooks
+#   ./install.sh --ctx-dir PATH     # install from a non-default checkout
 
 set -euo pipefail
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# ── Flags ────────────────────────────────────────────────────────────────────
+DRY_RUN=0
+ASSUME_YES=0
+WITH_HOOKS=0
+CTX_DIR=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run)     DRY_RUN=1; shift ;;
+    --yes|-y)      ASSUME_YES=1; shift ;;
+    --with-hooks)  WITH_HOOKS=1; shift ;;
+    --ctx-dir)     CTX_DIR="$2"; shift 2 ;;
+    -h|--help)     sed -n '2,25p' "$0"; exit 0 ;;
+    *)             echo "unknown flag: $1" >&2; exit 2 ;;
+  esac
+done
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CTX_DIR="${CTX_DIR:-$SCRIPT_DIR}"
+SRC_DIR="$CTX_DIR/src"
+
 CLAUDE_DIR="$HOME/.claude"
 AGENTS_DIR="$CLAUDE_DIR/agents"
+COMMANDS_DIR="$CLAUDE_DIR/commands"
 SKILLS_DIR="$CLAUDE_DIR/skills"
 CTX_STATE_DIR="${CTX_HOME:-$CLAUDE_DIR/ctx}"
-
-# Resolve ctx/ dir. Accepts: no args, `--ctx-dir PATH`, or positional PATH.
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ "${1:-}" == "--ctx-dir" && -n "${2:-}" ]]; then
-  CTX_DIR="$2"
-elif [[ -n "${1:-}" && "${1:-}" != --* ]]; then
-  CTX_DIR="$1"
-else
-  CTX_DIR="$SCRIPT_DIR"
-fi
-SRC_DIR="$CTX_DIR/src"
 
 PYTHON="${PYTHON:-python3}"
 if ! command -v "$PYTHON" &>/dev/null; then
   PYTHON="python"
 fi
 
-log() { echo "[install] $*"; }
-ok()  { echo "[install] ✓ $*"; }
-warn(){ echo "[install] ⚠ $*"; }
+# ── Helpers ──────────────────────────────────────────────────────────────────
+log()  { echo "[install] $*"; }
+ok()   { echo "[install] ✓ $*"; }
+warn() { echo "[install] ⚠ $*"; }
+
+confirm() {
+  local prompt="$1"
+  [[ "$ASSUME_YES" == 1 ]] && return 0
+  read -r -p "$prompt [y/N] " reply
+  [[ "$reply" =~ ^[Yy]$ ]]
+}
+
+act() {
+  if [[ "$DRY_RUN" == 1 ]]; then
+    echo "  [dry-run] $*"
+  else
+    eval "$*"
+  fi
+}
+
+# ── Preflight ────────────────────────────────────────────────────────────────
+echo "ctx-minimal install"
+echo "  source:    $CTX_DIR"
+echo "  state:     $CTX_STATE_DIR"
+echo "  router:    $AGENTS_DIR/skill-router.md"
+echo "  slash cmd: $COMMANDS_DIR/ctx.md"
+echo "  hooks:     $([[ "$WITH_HOOKS" == 1 ]] && echo "opt-in: will ask" || echo "SKIPPED (use --with-hooks)")"
+echo "  mode:      dry-run=$DRY_RUN, assume-y=$ASSUME_YES"
+echo
+
+if [[ ! -d "$SRC_DIR" ]]; then
+  echo "error: $SRC_DIR does not exist" >&2
+  exit 1
+fi
 
 # ── Step 1: Create ctx state dir ─────────────────────────────────────────────
-log "Step 1: Creating state dir $CTX_STATE_DIR"
-mkdir -p "$CTX_STATE_DIR"
-ok "State dir ready"
+log "Step 1: Create state dir $CTX_STATE_DIR"
+if confirm "Create $CTX_STATE_DIR?"; then
+  act "mkdir -p '$CTX_STATE_DIR'"
+  ok "State dir ready"
+else
+  warn "Skipped — aborting (state dir is required)"
+  exit 1
+fi
 
 # ── Step 2: Build catalog ────────────────────────────────────────────────────
-log "Step 2: Building catalog → $CTX_STATE_DIR/catalog.json"
-"$PYTHON" "$SRC_DIR/catalog_builder.py" \
-  --skills-dir "$SKILLS_DIR" \
-  --agents-dir "$AGENTS_DIR"
-ok "Catalog built"
+log "Step 2: Build $CTX_STATE_DIR/catalog.json"
+if confirm "Scan ~/.claude/skills and ~/.claude/agents into catalog.json?"; then
+  act "CTX_HOME='$CTX_STATE_DIR' '$PYTHON' '$SRC_DIR/catalog_builder.py'"
+  ok "Catalog built"
+else
+  warn "Skipped catalog build"
+fi
 
-# ── Step 3: Build knowledge graph ────────────────────────────────────────────
-log "Step 3: Building graph → $CTX_STATE_DIR/graph.json"
-"$PYTHON" "$SRC_DIR/wiki_graphify.py"
-ok "Graph built"
+# ── Step 3: Build graph ──────────────────────────────────────────────────────
+log "Step 3: Build $CTX_STATE_DIR/graph.json"
+if confirm "Build knowledge graph from skill/agent tag frontmatter?"; then
+  act "CTX_HOME='$CTX_STATE_DIR' '$PYTHON' '$SRC_DIR/wiki_graphify.py'"
+  ok "Graph built"
+else
+  warn "Skipped graph build"
+fi
 
 # ── Step 4: Deploy skill-router agent ────────────────────────────────────────
-ROUTER_SRC="$CTX_DIR/skills/skill-router"
-if [[ -d "$ROUTER_SRC" && -f "$ROUTER_SRC/SKILL.md" ]]; then
-  log "Step 4: Deploying skill-router to $AGENTS_DIR/skill-router.md"
-  mkdir -p "$AGENTS_DIR"
-  cp "$ROUTER_SRC/SKILL.md" "$AGENTS_DIR/skill-router.md"
-  ok "skill-router deployed (single file, no directory sprawl)"
+ROUTER_SRC="$CTX_DIR/skills/skill-router/SKILL.md"
+ROUTER_DST="$AGENTS_DIR/skill-router.md"
+log "Step 4: Deploy skill-router to $ROUTER_DST"
+if [[ ! -f "$ROUTER_SRC" ]]; then
+  warn "$ROUTER_SRC not found — skipping router deploy"
+elif confirm "Copy skill-router.md to $AGENTS_DIR?"; then
+  act "mkdir -p '$AGENTS_DIR'"
+  act "cp '$ROUTER_SRC' '$ROUTER_DST'"
+  ok "skill-router deployed"
 else
-  warn "skills/skill-router/SKILL.md not found in $CTX_DIR — skipping router deploy"
+  warn "Skipped router deploy"
+fi
+
+# ── Step 5: Install /ctx slash command ───────────────────────────────────────
+SLASH_SRC="$CTX_DIR/commands/ctx.md"
+SLASH_DST="$COMMANDS_DIR/ctx.md"
+log "Step 5: Install /ctx slash command to $SLASH_DST"
+if [[ ! -f "$SLASH_SRC" ]]; then
+  warn "$SLASH_SRC not found — skipping slash command"
+elif confirm "Copy /ctx slash command to $COMMANDS_DIR?"; then
+  act "mkdir -p '$COMMANDS_DIR'"
+  act "cp '$SLASH_SRC' '$SLASH_DST'"
+  ok "/ctx installed"
+else
+  warn "Skipped slash command"
+fi
+
+# ── Step 6 (optional): Install hooks ─────────────────────────────────────────
+if [[ "$WITH_HOOKS" == 1 ]]; then
+  log "Step 6: Install PostToolUse hooks into $CLAUDE_DIR/settings.json"
+  echo "  This writes a tagged block with _ctx:true + # @ctx-minimal markers."
+  echo "  A one-time backup goes to settings.json.pre-ctx.bak."
+  echo "  Hooks are no-ops until you set enable_live_suggestions: true"
+  echo "  in ~/.claude/skill-system-config.json."
+  if confirm "Proceed with hook install?"; then
+    act "'$PYTHON' '$SRC_DIR/ctx.py' install-hook"
+    ok "Hooks installed"
+  else
+    warn "Skipped hook install"
+  fi
+else
+  log "Step 6: Skipping hook install (default; pass --with-hooks to enable)"
 fi
 
 # ── Done ─────────────────────────────────────────────────────────────────────
-echo ""
+echo
 echo "═══════════════════════════════════════════════════════"
-echo " ctx-minimal installed (Phase 3 scope)"
+echo " ctx-minimal installed"
 echo "═══════════════════════════════════════════════════════"
 echo " State dir:    $CTX_STATE_DIR"
-echo " Router agent: $AGENTS_DIR/skill-router.md"
-echo " Source:       $SRC_DIR"
-echo ""
-echo " Hooks are NOT installed. They are opt-in from Phase 4 via:"
-echo "   $PYTHON $SRC_DIR/ctx.py install-hook   # (Phase 5+)"
-echo ""
-echo " Refresh graph + catalog after adding skills:"
-echo "   $PYTHON $SRC_DIR/catalog_builder.py"
-echo "   $PYTHON $SRC_DIR/wiki_graphify.py"
-echo ""
-echo " Recommend skills for the current project:"
-echo "   $PYTHON $SRC_DIR/scan_repo.py --repo . --output $CTX_STATE_DIR/stack-profile.json"
-echo "   $PYTHON $SRC_DIR/resolve_graph.py --tags python,api --top 10"
-echo ""
+echo " Router:       $ROUTER_DST"
+echo " Slash cmd:    $SLASH_DST"
+echo
+echo " Try it:"
+echo "   $PYTHON $SRC_DIR/ctx.py recommend --project . --top 10"
+echo "   $PYTHON $SRC_DIR/ctx.py doctor"
+echo
+echo " In a Claude Code session:"
+echo "   /ctx"
+echo
 echo " Uninstall:"
 echo "   $CTX_DIR/uninstall.sh"
-echo ""
+echo
