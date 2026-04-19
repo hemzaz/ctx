@@ -267,6 +267,10 @@ def load_recent_unmatched_count() -> int:
 
 
 def main() -> None:
+    # Gate: mid-session monitoring is opt-in.
+    if not _cfg.enable_live_suggestions:
+        sys.exit(0)
+
     parser = argparse.ArgumentParser(description="PostToolUse intent signal extractor")
     parser.add_argument("--tool", default="unknown", help="Tool name from hook")
     parser.add_argument("--input", default="{}", help="JSON-encoded tool input")

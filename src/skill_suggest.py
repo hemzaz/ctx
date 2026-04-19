@@ -56,6 +56,9 @@ def mark_shown() -> None:
 
 
 def main() -> None:
+    # Gate: live suggestions surface only when opted in.
+    if not cfg.enable_live_suggestions:
+        sys.exit(0)
     if not PENDING_SKILLS.exists():
         sys.exit(0)
 

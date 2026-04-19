@@ -124,6 +124,19 @@ class Config:
         # ── Catalog ───────────────────────────────────────────────────────
         self.line_threshold: int = int(raw.get("line_threshold", 180))
 
+        # ── Safety flags ──────────────────────────────────────────────────
+        # read_only: when True (default), no writer may mutate files under
+        # ~/.claude/skills or ~/.claude/agents. Contract is grep-enforced
+        # (see scripts/check-contracts.sh).
+        self.read_only: bool = bool(raw.get("read_only", True))
+        # enable_live_suggestions: when False (default), context_monitor
+        # and skill_suggest are no-ops even if the PostToolUse hook fires.
+        # Set to True only for power users who opt into mid-session
+        # monitoring via `ctx install-hook`.
+        self.enable_live_suggestions: bool = bool(
+            raw.get("enable_live_suggestions", False)
+        )
+
         # ── Extra Skill Dirs ──────────────────────────────────────────────
         self.extra_skill_dirs: list[Path] = [
             Path(_expand(d)) for d in raw.get("extra_skill_dirs", [])
