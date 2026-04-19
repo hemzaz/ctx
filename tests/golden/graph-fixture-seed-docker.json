@@ -1,0 +1,34 @@
+{
+  "mode": "graph-walk",
+  "results": [
+    {
+      "name": "kubernetes-ops",
+      "type": "skill",
+      "score": 3.5,
+      "shared_tags": [
+        "devops",
+        "docker",
+        "kubernetes",
+        "yaml"
+      ],
+      "via": [
+        "docker-expert",
+        "helm-charts"
+      ]
+    },
+    {
+      "name": "helm-charts",
+      "type": "skill",
+      "score": 2.5,
+      "shared_tags": [
+        "devops",
+        "kubernetes",
+        "yaml"
+      ],
+      "via": [
+        "docker-expert",
+        "kubernetes-ops"
+      ]
+    }
+  ]
+}

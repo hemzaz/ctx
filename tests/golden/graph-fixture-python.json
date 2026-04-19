@@ -1,0 +1,23 @@
+{
+  "mode": "tag-search",
+  "results": [
+    {
+      "name": "fastapi-expert",
+      "type": "skill",
+      "score": 30.69,
+      "matching_tags": [
+        "api",
+        "fastapi",
+        "python"
+      ]
+    },
+    {
+      "name": "pytest-master",
+      "type": "skill",
+      "score": 11.1,
+      "matching_tags": [
+        "python"
+      ]
+    }
+  ]
+}

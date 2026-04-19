@@ -1,0 +1,164 @@
+{
+  "directed": false,
+  "edges": [
+    {
+      "shared_tags": [
+        "devops"
+      ],
+      "source": "skill:docker-expert",
+      "target": "skill:helm-charts",
+      "weight": 1
+    },
+    {
+      "shared_tags": [
+        "python"
+      ],
+      "source": "skill:fastapi-expert",
+      "target": "skill:pytest-master",
+      "weight": 1
+    },
+    {
+      "shared_tags": [
+        "devops",
+        "docker"
+      ],
+      "source": "skill:kubernetes-ops",
+      "target": "skill:docker-expert",
+      "weight": 2
+    },
+    {
+      "shared_tags": [
+        "devops",
+        "kubernetes",
+        "yaml"
+      ],
+      "source": "skill:kubernetes-ops",
+      "target": "skill:helm-charts",
+      "weight": 3
+    },
+    {
+      "shared_tags": [
+        "testing"
+      ],
+      "source": "skill:pytest-master",
+      "target": "agent:code-reviewer",
+      "weight": 1
+    },
+    {
+      "shared_tags": [
+        "frontend",
+        "react",
+        "typescript"
+      ],
+      "source": "skill:react-ui",
+      "target": "skill:next-expert",
+      "weight": 3
+    }
+  ],
+  "graph": {},
+  "multigraph": false,
+  "nodes": [
+    {
+      "id": "agent:architect",
+      "label": "architect",
+      "tags": [
+        "architecture",
+        "design"
+      ],
+      "type": "agent"
+    },
+    {
+      "id": "agent:code-reviewer",
+      "label": "code-reviewer",
+      "tags": [
+        "testing",
+        "security",
+        "review"
+      ],
+      "type": "agent"
+    },
+    {
+      "id": "skill:docker-expert",
+      "label": "docker-expert",
+      "tags": [
+        "docker",
+        "containers",
+        "devops"
+      ],
+      "type": "skill"
+    },
+    {
+      "id": "skill:fastapi-expert",
+      "label": "fastapi-expert",
+      "tags": [
+        "python",
+        "fastapi",
+        "api",
+        "async"
+      ],
+      "type": "skill"
+    },
+    {
+      "id": "skill:go-concurrency",
+      "label": "go-concurrency",
+      "tags": [
+        "go",
+        "concurrency",
+        "performance"
+      ],
+      "type": "skill"
+    },
+    {
+      "id": "skill:helm-charts",
+      "label": "helm-charts",
+      "tags": [
+        "kubernetes",
+        "helm",
+        "yaml",
+        "devops"
+      ],
+      "type": "skill"
+    },
+    {
+      "id": "skill:kubernetes-ops",
+      "label": "kubernetes-ops",
+      "tags": [
+        "kubernetes",
+        "docker",
+        "devops",
+        "yaml"
+      ],
+      "type": "skill"
+    },
+    {
+      "id": "skill:next-expert",
+      "label": "next-expert",
+      "tags": [
+        "nextjs",
+        "react",
+        "typescript",
+        "frontend"
+      ],
+      "type": "skill"
+    },
+    {
+      "id": "skill:pytest-master",
+      "label": "pytest-master",
+      "tags": [
+        "python",
+        "testing"
+      ],
+      "type": "skill"
+    },
+    {
+      "id": "skill:react-ui",
+      "label": "react-ui",
+      "tags": [
+        "react",
+        "typescript",
+        "frontend"
+      ],
+      "type": "skill"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "mode": "tag-search",
+  "results": [
+    {
+      "name": "kubernetes-ops",
+      "type": "skill",
+      "score": 31.1,
+      "matching_tags": [
+        "devops",
+        "docker",
+        "kubernetes"
+      ]
+    },
+    {
+      "name": "docker-expert",
+      "type": "skill",
+      "score": 21.1,
+      "matching_tags": [
+        "devops",
+        "docker"
+      ]
+    },
+    {
+      "name": "helm-charts",
+      "type": "skill",
+      "score": 21.1,
+      "matching_tags": [
+        "devops",
+        "kubernetes"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "mode": "tag-search",
+  "results": [
+    {
+      "name": "next-expert",
+      "type": "skill",
+      "score": 30.69,
+      "matching_tags": [
+        "frontend",
+        "react",
+        "typescript"
+      ]
+    },
+    {
+      "name": "react-ui",
+      "type": "skill",
+      "score": 30.69,
+      "matching_tags": [
+        "frontend",
+        "react",
+        "typescript"
+      ]
+    }
+  ]
+}
