@@ -33,7 +33,7 @@ def load_graph() -> nx.Graph:
         sys.exit(1)
     with open(GRAPH_PATH, encoding="utf-8") as f:
         data = json.load(f)
-    return node_link_graph(data)
+    return node_link_graph(data, edges="edges")
 
 
 def resolve_by_seeds(

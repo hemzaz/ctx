@@ -268,7 +268,7 @@ def export_graph(G: nx.Graph, communities: dict[int, list[str]]) -> None:
     GRAPH_OUT.mkdir(parents=True, exist_ok=True)
 
     # Export graph as node-link JSON
-    graph_data = nx.node_link_data(G)
+    graph_data = nx.node_link_data(G, edges="edges")
     (GRAPH_OUT / "graph.json").write_text(
         json.dumps(graph_data, indent=2, default=str),
         encoding="utf-8",

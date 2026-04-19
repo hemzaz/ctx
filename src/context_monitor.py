@@ -195,7 +195,7 @@ def graph_suggest(unmatched_tags: list[str]) -> list[dict]:
         from networkx.readwrite import node_link_graph
         import math
         with open(graph_path, encoding="utf-8") as f:
-            G = node_link_graph(json.load(f))
+            G = node_link_graph(json.load(f), edges="edges")
         tag_set = set(unmatched_tags)
         scores: dict[str, float] = {}
         for nid, data in G.nodes(data=True):
