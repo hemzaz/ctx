@@ -15,9 +15,6 @@ _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(_PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT))
 
-from wiki_sync import ensure_wiki  # noqa: E402  (import after path manipulation)
-
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -27,19 +24,6 @@ from wiki_sync import ensure_wiki  # noqa: E402  (import after path manipulation
 def project_root() -> Path:
     """Return the ctx project root directory as a Path."""
     return _PROJECT_ROOT
-
-
-@pytest.fixture()
-def tmp_wiki(tmp_path: Path) -> Path:
-    """
-    Create a temporary wiki directory using wiki_sync.ensure_wiki.
-
-    The returned Path is the wiki root (tmp_path / "skill-wiki").
-    All required subdirectories and seed files are created by ensure_wiki.
-    """
-    wiki_dir = tmp_path / "skill-wiki"
-    ensure_wiki(str(wiki_dir))
-    return wiki_dir
 
 
 @pytest.fixture()
