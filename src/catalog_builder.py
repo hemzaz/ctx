@@ -1,226 +1,171 @@
 #!/usr/bin/env python3
 """
-catalog_builder.py -- Build a bulk skill catalog in the wiki.
+catalog_builder.py -- Index all installed skills and agents into a single
+JSON catalog at ``cfg.catalog_path``.
 
-Creates ~/.claude/skill-wiki/catalog.md listing ALL installed skills/agents
-with name, path, line count, and category. This is the master index — individual
-entity pages (entities/skills/*.md) are created on-demand by the router.
+One record per skill/agent with name, type, path, line count, tags, and an
+``over_threshold`` flag (informational: skills longer than
+``cfg.line_threshold`` may be candidates for splitting at author time, but
+the tool never rewrites them).
 
-Usage:
-    python catalog_builder.py \
-      --wiki ~/.claude/skill-wiki \
-      --skills-dir ~/.claude/skills \
-      --agents-dir ~/.claude/agents \
-      [--extra-dirs /path1 /path2]   # additional skill repos
+Usage::
 
-Also adds newly found skills to the wiki index.md and appends to log.md.
+    python catalog_builder.py                        # default dirs from cfg
+    python catalog_builder.py --skills-dir /path     # override
+    python catalog_builder.py --extra-dirs /a /b
 """
 
+from __future__ import annotations
+
 import argparse
-import re
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from ctx_config import cfg  # noqa: E402
+from wiki_utils import parse_frontmatter as _parse_fm  # noqa: E402
 
-TODAY = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+def _normalize_tags(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [str(t).strip() for t in value if str(t).strip()]
+    if isinstance(value, str):
+        return [t.strip() for t in value.split(",") if t.strip()]
+    return []
+
+
+def _record(md_path: Path, name: str, node_type: str) -> dict:
+    try:
+        text = md_path.read_text(encoding="utf-8", errors="replace")
+    except Exception as exc:  # noqa: BLE001
+        print(f"warning: could not read {md_path}: {exc}", file=sys.stderr)
+        text = ""
+    fm = _parse_fm(text) if text else {}
+    lines = len(text.splitlines())
+    return {
+        "name": name,
+        "type": node_type,
+        "path": str(md_path),
+        "lines": lines,
+        "tags": _normalize_tags(fm.get("tags", [])),
+        "over_threshold": lines > cfg.line_threshold,
+    }
 
 
 def scan_skills_dir(skills_dir: Path) -> list[dict]:
-    """Scan a directory for skills (subdirs with SKILL.md)."""
-    results = []
-    if not skills_dir.exists():
+    """Every ``<skill>/SKILL.md`` under ``skills_dir``."""
+    results: list[dict] = []
+    if not skills_dir.is_dir():
         return results
-
-    for item in sorted(skills_dir.iterdir()):
-        if item.is_dir():
-            skill_md = item / "SKILL.md"
-            if skill_md.exists():
-                try:
-                    lines = len(skill_md.read_text(encoding="utf-8", errors="replace").splitlines())
-                except Exception as exc:
-                    print(f"Warning: failed to read skill file {skill_md}: {exc}", file=sys.stderr)
-                    lines = 0
-                results.append({
-                    "name": item.name,
-                    "path": str(skill_md),
-                    "lines": lines,
-                    "type": "skill",
-                    "over_180": lines > cfg.line_threshold,
-                })
+    for skill_md in sorted(skills_dir.rglob("SKILL.md")):
+        results.append(_record(skill_md, skill_md.parent.name, "skill"))
     return results
 
 
 def scan_agents_dir(agents_dir: Path) -> list[dict]:
-    """Scan a directory for flat agent .md files."""
-    results = []
-    if not agents_dir.exists():
+    """Every ``*.md`` under ``agents_dir`` (excluding ``SKILL.md``)."""
+    results: list[dict] = []
+    if not agents_dir.is_dir():
         return results
-
-    for item in sorted(agents_dir.glob("*.md")):
-        try:
-            lines = len(item.read_text(encoding="utf-8", errors="replace").splitlines())
-        except Exception as exc:
-            print(f"Warning: failed to read agent file {item}: {exc}", file=sys.stderr)
-            lines = 0
-        results.append({
-            "name": item.stem,
-            "path": str(item),
-            "lines": lines,
-            "type": "agent",
-            "over_180": lines > cfg.line_threshold,
-        })
+    for md in sorted(agents_dir.rglob("*.md")):
+        if md.name == "SKILL.md":
+            continue
+        results.append(_record(md, md.stem, "agent"))
     return results
 
 
 def build_catalog(
-    wiki_dir: Path,
     skills_dir: Path,
     agents_dir: Path,
     extra_dirs: list[Path],
 ) -> dict:
-    """Build catalog.md in the wiki and return stats."""
-    all_items: list[dict] = []
-
-    # Scan primary dirs
-    all_items.extend(scan_skills_dir(skills_dir))
-    all_items.extend(scan_agents_dir(agents_dir))
-
-    # Scan extra dirs (additional skill repos)
+    items: list[dict] = []
+    items.extend(scan_skills_dir(skills_dir))
+    items.extend(scan_agents_dir(agents_dir))
     for extra in extra_dirs:
-        if extra.is_dir():
-            # Try both patterns: dir/SKILL.md and flat *.md
-            sub_skills = scan_skills_dir(extra)
-            if sub_skills:
-                all_items.extend(sub_skills)
-            else:
-                all_items.extend(scan_agents_dir(extra))
+        if not extra.is_dir():
+            continue
+        sub_skills = scan_skills_dir(extra)
+        if sub_skills:
+            items.extend(sub_skills)
+        else:
+            items.extend(scan_agents_dir(extra))
 
-    # Stats
-    total = len(all_items)
-    over_180 = sum(1 for i in all_items if i["over_180"])
-    skills_count = sum(1 for i in all_items if i["type"] == "skill")
-    agents_count = sum(1 for i in all_items if i["type"] == "agent")
+    # Deduplicate by (type, name) keeping first occurrence
+    seen: set[tuple[str, str]] = set()
+    deduped: list[dict] = []
+    for it in items:
+        key = (it["type"], it["name"])
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(it)
 
-    # Build catalog.md
-    lines = [
-        "# Skill Catalog",
-        "",
-        f"> Auto-generated by catalog_builder.py on {TODAY}.",
-        "> Individual wiki pages are created on-demand when skills are loaded by the router.",
-        "",
-        "## Summary",
-        "",
-        "| Metric | Count |",
-        "|--------|-------|",
-        f"| Total items | {total} |",
-        f"| Skills (SKILL.md) | {skills_count} |",
-        f"| Agents (flat .md) | {agents_count} |",
-        f"| Items > 180 lines | {over_180} |",
-        f"| Items ≤ 180 lines | {total - over_180} |",
-        "",
-        "## All Skills",
-        "",
-        "| Name | Type | Lines | Over 180 | Path |",
-        "|------|------|-------|----------|------|",
-    ]
-
-    for item in all_items:
-        flag = "⚠" if item["over_180"] else ""
-        lines.append(
-            f"| {item['name']} | {item['type']} | {item['lines']} | {flag} | `{item['path']}` |"
-        )
-
-    catalog_path = wiki_dir / "catalog.md"
-    catalog_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    skills = sum(1 for i in deduped if i["type"] == "skill")
+    agents = sum(1 for i in deduped if i["type"] == "agent")
+    over_threshold = sum(1 for i in deduped if i["over_threshold"])
 
     return {
-        "total": total,
-        "skills": skills_count,
-        "agents": agents_count,
-        "over_180": over_180,
-        "catalog_path": str(catalog_path),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "total": len(deduped),
+        "skills": skills,
+        "agents": agents,
+        "over_threshold": over_threshold,
+        "line_threshold": cfg.line_threshold,
+        "items": deduped,
     }
 
 
-def update_wiki_index(wiki_dir: Path, stats: dict) -> None:
-    """Update index.md with catalog reference."""
-    index_path = wiki_dir / "index.md"
-    if not index_path.exists():
-        return
-
-    content = index_path.read_text(encoding="utf-8")
-    catalog_ref = "- [[catalog]] - Full skill catalog (all installed items)"
-
-    if "[[catalog]]" not in content:
-        # Insert under ## Skills section
-        lines = content.split("\n")
-        for i, line in enumerate(lines):
-            if line.strip() == "## Skills":
-                lines.insert(i + 1, catalog_ref)
-                break
-        else:
-            lines.append(catalog_ref)
-        content = "\n".join(lines)
-
-    # Update total count
-    content = re.sub(
-        r"Total pages: \d+",
-        f"Total pages: {stats['total']}",
-        content,
+def write_catalog(catalog: dict, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(catalog, indent=2, sort_keys=True),
+        encoding="utf-8",
     )
-    content = re.sub(
-        r"Last updated: [\d-]+",
-        f"Last updated: {TODAY}",
-        content,
-    )
-    index_path.write_text(content, encoding="utf-8")
-
-
-def append_log(wiki_dir: Path, stats: dict) -> None:
-    """Append catalog build entry to log.md."""
-    log_path = wiki_dir / "log.md"
-    if not log_path.exists():
-        return
-
-    entry = (
-        f"\n## [{TODAY}] catalog-build | all-skills\n"
-        f"- Total items cataloged: {stats['total']}\n"
-        f"- Skills: {stats['skills']}, Agents: {stats['agents']}\n"
-        f"- Over 180 lines (micro-skill candidates): {stats['over_180']}\n"
-        f"- Catalog written to: {stats['catalog_path']}\n"
-    )
-    with open(log_path, "a", encoding="utf-8") as f:
-        f.write(entry)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build bulk skill catalog in wiki")
-    parser.add_argument("--wiki", default=str(cfg.wiki_dir), help="Wiki directory")
-    parser.add_argument("--skills-dir", default=str(cfg.skills_dir), help="Skills directory")
-    parser.add_argument("--agents-dir", default=str(cfg.agents_dir), help="Agents directory")
-    parser.add_argument("--extra-dirs", nargs="*", default=[], help="Additional skill directories")
+    parser = argparse.ArgumentParser(
+        description="Build skill/agent catalog JSON at cfg.catalog_path",
+    )
+    parser.add_argument(
+        "--skills-dir",
+        default=str(cfg.skills_dir),
+        help=f"Skills directory (default: {cfg.skills_dir})",
+    )
+    parser.add_argument(
+        "--agents-dir",
+        default=str(cfg.agents_dir),
+        help=f"Agents directory (default: {cfg.agents_dir})",
+    )
+    parser.add_argument(
+        "--extra-dirs",
+        nargs="*",
+        default=[str(p) for p in cfg.extra_skill_dirs],
+        help="Additional skill/agent source directories",
+    )
+    parser.add_argument(
+        "--output",
+        default=str(cfg.catalog_path),
+        help=f"Output catalog path (default: {cfg.catalog_path})",
+    )
     args = parser.parse_args()
 
-    wiki_dir = Path(args.wiki)
-    if not wiki_dir.exists():
-        print(f"Wiki not initialized at {wiki_dir}. Run wiki_sync.py --init first.", file=sys.stderr)
-        sys.exit(1)
-
-    stats = build_catalog(
-        wiki_dir=wiki_dir,
+    catalog = build_catalog(
         skills_dir=Path(args.skills_dir),
         agents_dir=Path(args.agents_dir),
         extra_dirs=[Path(d) for d in args.extra_dirs],
     )
+    write_catalog(catalog, Path(args.output))
 
-    update_wiki_index(wiki_dir, stats)
-    append_log(wiki_dir, stats)
-
-    print(f"Catalog built: {stats['total']} items ({stats['over_180']} over 180 lines)")
-    print(f"Written to: {stats['catalog_path']}")
+    print(
+        f"Catalog: {catalog['total']} items "
+        f"({catalog['skills']} skills, {catalog['agents']} agents), "
+        f"{catalog['over_threshold']} over {catalog['line_threshold']} lines"
+    )
+    print(f"Written to: {args.output}")
 
 
 if __name__ == "__main__":
