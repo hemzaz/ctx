@@ -29,7 +29,13 @@ def fake_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("USERPROFILE", str(home))  # Windows
+    # Ensure CTX_HOME env doesn't leak in and redirect away from this fake HOME.
+    monkeypatch.delenv("CTX_HOME", raising=False)
 
+    # Reload ctx_config first so cfg.skills_dir / cfg.agents_dir / cfg.manifest_path
+    # re-resolve against the fake HOME. skill_loader then picks up the fresh cfg.
+    import ctx_config
+    importlib.reload(ctx_config)
     import skill_loader
     importlib.reload(skill_loader)
     return skill_loader, home

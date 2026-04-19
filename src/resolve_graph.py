@@ -22,16 +22,17 @@ from pathlib import Path
 import networkx as nx
 from networkx.readwrite import node_link_graph
 
-WIKI_DIR = Path(os.path.expanduser("~/.claude/skill-wiki"))
-GRAPH_PATH = WIKI_DIR / "graphify-out" / "graph.json"
+sys.path.insert(0, str(Path(__file__).parent))
+from ctx_config import cfg  # noqa: E402
 
 
 def load_graph() -> nx.Graph:
-    """Load the knowledge graph from graph.json."""
-    if not GRAPH_PATH.exists():
-        print(f"Error: {GRAPH_PATH} not found. Run wiki_graphify.py first.", file=sys.stderr)
+    """Load the knowledge graph from graph.json (cfg.graph_path)."""
+    graph_path = cfg.graph_path
+    if not graph_path.exists():
+        print(f"Error: {graph_path} not found. Run wiki_graphify.py first.", file=sys.stderr)
         sys.exit(1)
-    with open(GRAPH_PATH, encoding="utf-8") as f:
+    with open(graph_path, encoding="utf-8") as f:
         data = json.load(f)
     return node_link_graph(data, edges="edges")
 
@@ -136,7 +137,7 @@ def resolve_by_tags(
         node_data = G.nodes.get(nid, {})
         entity_type = node_data.get("type", "skill")
         name = node_data.get("label", nid.split(":", 1)[-1])
-        matching_tags = list(tag_set & set(node_data.get("tags", [])))
+        matching_tags = sorted(tag_set & set(node_data.get("tags", [])))
         results.append({
             "name": name,
             "type": entity_type,

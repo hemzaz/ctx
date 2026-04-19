@@ -34,15 +34,9 @@ def _minimal_raw(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
     raw: dict[str, Any] = {
         "paths": {
             "claude_dir": "~/.claude",
-            "wiki_dir": "~/.claude/skill-wiki",
+            "ctx_home": "~/.claude/ctx",
             "skills_dir": "~/.claude/skills",
             "agents_dir": "~/.claude/agents",
-            "skill_manifest": "~/.claude/skill-manifest.json",
-            "intent_log": "~/.claude/intent-log.jsonl",
-            "pending_skills": "~/.claude/pending-skills.json",
-            "skill_registry": "~/.claude/skill-registry.json",
-            "stack_profile_tmp": "/tmp/skill-stack-profile.json",
-            "catalog": "~/.claude/skill-wiki/catalog.md",
         },
         "resolver": {},
         "context_monitor": {},
@@ -62,13 +56,29 @@ def _minimal_raw(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
 class TestConfigLoadsDefaults:
     """test_config_loads_defaults -- expected attributes exist with correct defaults."""
 
-    def test_has_wiki_dir(self) -> None:
+    def test_has_ctx_home(self) -> None:
         cfg = Config(_minimal_raw())
-        assert hasattr(cfg, "wiki_dir")
+        assert hasattr(cfg, "ctx_home")
 
     def test_has_skills_dir(self) -> None:
         cfg = Config(_minimal_raw())
         assert hasattr(cfg, "skills_dir")
+
+    def test_state_paths_derived_from_ctx_home(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # Unset any test-runner CTX_HOME so config-derived path wins.
+        monkeypatch.delenv("CTX_HOME", raising=False)
+        cfg = Config(_minimal_raw({"paths": {"ctx_home": "/tmp/sandbox-ctx"}}))
+        assert cfg.manifest_path == Path("/tmp/sandbox-ctx/manifest.json")
+        assert cfg.intent_log == Path("/tmp/sandbox-ctx/intent-log.jsonl")
+        assert cfg.pending_skills == Path("/tmp/sandbox-ctx/pending.json")
+        assert cfg.graph_path == Path("/tmp/sandbox-ctx/graph.json")
+        assert cfg.catalog_path == Path("/tmp/sandbox-ctx/catalog.json")
+
+    def test_ctx_home_env_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("CTX_HOME", "/var/env-ctx")
+        cfg = Config(_minimal_raw({"paths": {"ctx_home": "/ignored/config/path"}}))
+        assert cfg.ctx_home == Path("/var/env-ctx")
+        assert cfg.manifest_path == Path("/var/env-ctx/manifest.json")
 
     def test_line_threshold_default(self) -> None:
         cfg = Config(_minimal_raw())
@@ -84,15 +94,18 @@ class TestConfigPathsArePathlib:
 
     PATH_ATTRS = [
         "claude_dir",
-        "wiki_dir",
+        "ctx_home",
         "skills_dir",
         "agents_dir",
-        "skill_manifest",
+        "manifest_path",
         "intent_log",
         "pending_skills",
+        "pending_unload",
+        "shown_flag",
+        "stack_profile",
+        "catalog_path",
+        "graph_path",
         "skill_registry",
-        "stack_profile_tmp",
-        "catalog",
     ]
 
     @pytest.mark.parametrize("attr", PATH_ATTRS)
@@ -106,10 +119,10 @@ class TestConfigPathsArePathlib:
 class TestConfigExpandTilde:
     """test_config_expand_tilde -- paths with ~ are expanded to absolute paths."""
 
-    def test_wiki_dir_is_absolute(self) -> None:
+    def test_ctx_home_is_absolute(self) -> None:
         cfg = Config(_minimal_raw())
-        assert cfg.wiki_dir.is_absolute(), (
-            f"wiki_dir should be absolute after ~ expansion, got: {cfg.wiki_dir}"
+        assert cfg.ctx_home.is_absolute(), (
+            f"ctx_home should be absolute after ~ expansion, got: {cfg.ctx_home}"
         )
 
     def test_skills_dir_is_absolute(self) -> None:
@@ -121,10 +134,10 @@ class TestConfigExpandTilde:
         assert cfg.claude_dir.is_absolute()
 
     def test_custom_tilde_path_expanded(self) -> None:
-        raw = _minimal_raw({"paths": {"wiki_dir": "~/custom-wiki"}})
+        raw = _minimal_raw({"paths": {"ctx_home": "~/custom-ctx"}})
         cfg = Config(raw)
-        assert "~" not in str(cfg.wiki_dir)
-        assert cfg.wiki_dir.is_absolute()
+        assert "~" not in str(cfg.ctx_home)
+        assert cfg.ctx_home.is_absolute()
 
 
 class TestConfigReload:

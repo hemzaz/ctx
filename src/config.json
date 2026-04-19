@@ -1,18 +1,12 @@
 {
-  "_comment": "ctx-minimal configuration. Override in ~/.claude/skill-system-config.json.",
+  "_comment": "ctx-minimal configuration. All runtime state lives under ctx_home (default ~/.claude/ctx). Override with CTX_HOME env var or ~/.claude/skill-system-config.json.",
   "_config_path": "~/.claude/skill-system-config.json",
 
   "paths": {
     "claude_dir": "~/.claude",
-    "wiki_dir": "~/.claude/skill-wiki",
+    "ctx_home": "~/.claude/ctx",
     "skills_dir": "~/.claude/skills",
-    "agents_dir": "~/.claude/agents",
-    "skill_manifest": "~/.claude/skill-manifest.json",
-    "intent_log": "~/.claude/intent-log.jsonl",
-    "pending_skills": "~/.claude/pending-skills.json",
-    "skill_registry": "~/.claude/skill-registry.json",
-    "stack_profile_tmp": "/tmp/skill-stack-profile.json",
-    "catalog": "~/.claude/skill-wiki/catalog.md"
+    "agents_dir": "~/.claude/agents"
   },
 
   "resolver": {

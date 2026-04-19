@@ -20,7 +20,9 @@ import sys
 import tempfile
 from pathlib import Path
 
-from wiki_utils import validate_skill_name
+sys.path.insert(0, str(Path(__file__).parent))
+from wiki_utils import validate_skill_name  # noqa: E402
+from ctx_config import cfg  # noqa: E402
 
 
 def _atomic_write_text(path: Path, text: str) -> None:
@@ -38,11 +40,10 @@ def _atomic_write_text(path: Path, text: str) -> None:
             pass
         raise
 
-SKILLS_DIR = Path(os.path.expanduser("~/.claude/skills"))
-AGENTS_DIR = Path(os.path.expanduser("~/.claude/agents"))
-WIKI_DIR = Path(os.path.expanduser("~/.claude/skill-wiki"))
-PENDING_SKILLS = Path(os.path.expanduser("~/.claude/pending-skills.json"))
-MANIFEST_PATH = Path(os.path.expanduser("~/.claude/skill-manifest.json"))
+SKILLS_DIR = cfg.skills_dir
+AGENTS_DIR = cfg.agents_dir
+PENDING_SKILLS = cfg.pending_skills
+MANIFEST_PATH = cfg.manifest_path
 
 
 def _resolved_under(candidate: Path, base: Path) -> bool:

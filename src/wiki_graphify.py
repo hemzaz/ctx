@@ -25,14 +25,18 @@ from networkx.algorithms.community import greedy_modularity_communities
 
 sys.path.insert(0, str(Path(__file__).parent))
 from wiki_utils import parse_frontmatter as _parse_fm  # noqa: E402
+from ctx_config import cfg  # noqa: E402
 
 TODAY = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
+# Phase 2: graph output lives under ctx_home; concept/entity pages are
+# legacy write targets slated for removal in Phase 3 when this module is
+# rewritten to read SKILL.md tags directly.
 WIKI_DIR = Path(os.path.expanduser("~/.claude/skill-wiki"))
 SKILL_ENTITIES = WIKI_DIR / "entities" / "skills"
 AGENT_ENTITIES = WIKI_DIR / "entities" / "agents"
 CONCEPTS_DIR = WIKI_DIR / "concepts"
-GRAPH_OUT = WIKI_DIR / "graphify-out"
+GRAPH_OUT = cfg.ctx_home
 
 
 def parse_frontmatter(filepath: Path) -> dict:

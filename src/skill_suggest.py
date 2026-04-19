@@ -21,10 +21,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-CLAUDE_DIR = Path(os.path.expanduser("~/.claude"))
-PENDING_SKILLS = CLAUDE_DIR / "pending-skills.json"
-PENDING_UNLOAD = CLAUDE_DIR / "pending-unload.json"
-SHOWN_FLAG = CLAUDE_DIR / ".skill-suggest-shown"
+sys.path.insert(0, str(Path(__file__).parent))
+from ctx_config import cfg  # noqa: E402
+
+PENDING_SKILLS = cfg.pending_skills
+PENDING_UNLOAD = cfg.pending_unload
+SHOWN_FLAG = cfg.shown_flag
 
 
 def already_shown_this_session() -> bool:

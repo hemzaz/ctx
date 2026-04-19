@@ -23,6 +23,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).parent))
 from wiki_utils import parse_frontmatter as _parse_fm  # noqa: E402
+from ctx_config import cfg  # noqa: E402
 
 
 def discover_available_skills(skills_dir: str) -> dict[str, dict]:
@@ -369,11 +370,11 @@ def apply_intent_boosts(
 def main():
     parser = argparse.ArgumentParser(description="Resolve stack profile to skill manifest")
     parser.add_argument("--profile", required=True, help="Path to stack-profile.json")
-    parser.add_argument("--wiki", default=os.path.expanduser("~/.claude/skill-wiki"), help="Wiki path")
-    parser.add_argument("--available-skills", default=os.path.expanduser("~/.claude/skills"), help="Skills directory")
-    parser.add_argument("--output", default=os.path.expanduser("~/.claude/skill-manifest.json"), help="Output manifest path")
+    parser.add_argument("--wiki", default=str(cfg.ctx_home), help="Wiki/state path (ctx_home)")
+    parser.add_argument("--available-skills", default=str(cfg.skills_dir), help="Skills directory")
+    parser.add_argument("--output", default=str(cfg.manifest_path), help="Output manifest path")
     parser.add_argument("--max-skills", type=int, default=15, help="Max simultaneous skills")
-    parser.add_argument("--intent-log", default=os.path.expanduser("~/.claude/intent-log.jsonl"), help="Intent log path for mid-session signal boosts")
+    parser.add_argument("--intent-log", default=str(cfg.intent_log), help="Intent log path for mid-session signal boosts")
     parser.add_argument("--pending-output", default="", help="If set, also write to this path (for mid-session re-runs)")
     args = parser.parse_args()
 
@@ -382,7 +383,7 @@ def main():
         profile = json.load(f)
 
     # Discover available skills (from registered dirs if registry exists)
-    registry_path = Path(os.path.expanduser("~/.claude/skill-registry.json"))
+    registry_path = cfg.skill_registry
     skill_dirs = [args.available_skills]
     if registry_path.exists():
         try:

@@ -34,19 +34,15 @@ def _atomic_write_text(path: Path, text: str) -> None:
             pass
         raise
 
-try:
-    from ctx_config import cfg as _cfg
-    CLAUDE_DIR = _cfg.claude_dir
-    INTENT_LOG = _cfg.intent_log
-    PENDING_SKILLS = _cfg.pending_skills
-    MANIFEST_PATH = _cfg.skill_manifest
-    _THRESHOLD = _cfg.unmatched_signal_threshold
-except ImportError:
-    CLAUDE_DIR = Path(os.path.expanduser("~/.claude"))
-    INTENT_LOG = CLAUDE_DIR / "intent-log.jsonl"
-    PENDING_SKILLS = CLAUDE_DIR / "pending-skills.json"
-    MANIFEST_PATH = CLAUDE_DIR / "skill-manifest.json"
-    _THRESHOLD = 3
+sys.path.insert(0, str(Path(__file__).parent))
+from ctx_config import cfg as _cfg  # noqa: E402
+
+CTX_HOME = _cfg.ctx_home
+INTENT_LOG = _cfg.intent_log
+PENDING_SKILLS = _cfg.pending_skills
+MANIFEST_PATH = _cfg.manifest_path
+GRAPH_PATH = _cfg.graph_path
+_THRESHOLD = _cfg.unmatched_signal_threshold
 
 # Keyword → stack signal mapping
 KEYWORD_SIGNALS: dict[str, str] = {
@@ -167,7 +163,7 @@ def load_manifest_skills() -> set[str]:
 
 def append_intent_log(entry: dict[str, Any]) -> None:
     """Append a single JSON line to the intent log."""
-    CLAUDE_DIR.mkdir(parents=True, exist_ok=True)
+    CTX_HOME.mkdir(parents=True, exist_ok=True)
     with open(INTENT_LOG, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
 
@@ -188,9 +184,9 @@ def graph_suggest(unmatched_tags: list[str]) -> list[dict]:
     Scoring: name match (50pts) > tag overlap (10pts/tag) > degree (tiebreak).
     This ensures 'fastapi-pro' ranks above 'prompt-optimizer' for a 'fastapi' signal.
     """
-    graph_path = Path(os.path.expanduser("~/.claude/skill-wiki/graphify-out/graph.json"))
-    if not graph_path.exists():
+    if not GRAPH_PATH.exists():
         return []
+    graph_path = GRAPH_PATH
     try:
         from networkx.readwrite import node_link_graph
         import math
